@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pinball Universe - Demo</title>
+  <style>
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #000 20%, #111);
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const GRAVITY = 0.4;
+    const FLIPPER_FORCE = -12;
+    const BALL_RADIUS = 10;
+
+    let ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 3,
+      vx: 2,
+      vy: 0,
+      radius: BALL_RADIUS,
+      color: '#00ffcc'
+    };
+
+    let flipperLeft = {
+      x: canvas.width / 2 - 60,
+      y: canvas.height - 50,
+      width: 60,
+      height: 10,
+      angle: 0,
+      active: false
+    };
+
+    let flipperRight = {
+      x: canvas.width / 2 + 10,
+      y: canvas.height - 50,
+      width: 60,
+      height: 10,
+      angle: 0,
+      active: false
+    };
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawFlipper(flipper) {
+      ctx.save();
+      ctx.translate(flipper.x + flipper.width / 2, flipper.y);
+      ctx.rotate(flipper.angle);
+      ctx.fillStyle = '#ff0077';
+      ctx.fillRect(-flipper.width / 2, -flipper.height / 2, flipper.width, flipper.height);
+      ctx.restore();
+    }
+
+    function updateBall() {
+      ball.vy += GRAVITY;
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      if (ball.x < ball.radius) {
+        ball.x = ball.radius;
+        ball.vx *= -1;
+      } else if (ball.x > canvas.width - ball.radius) {
+        ball.x = canvas.width - ball.radius;
+        ball.vx *= -1;
+      }
+
+      if (ball.y > canvas.height + ball.radius) {
+        ball.y = canvas.height / 3;
+        ball.vy = 0;
+        ball.vx = 2;
+      }
+
+      const flippers = [flipperLeft, flipperRight];
+      flippers.forEach(flipper => {
+        const dx = ball.x - (flipper.x + flipper.width / 2);
+        const dy = ball.y - flipper.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < ball.radius + flipper.width / 2 && flipper.active && ball.vy > 0) {
+          ball.vy = FLIPPER_FORCE;
+          ball.vx += (Math.random() - 0.5) * 4;
+        }
+      });
+    }
+
+    function updateFlippers() {
+      flipperLeft.angle = flipperLeft.active ? -Math.PI / 6 : 0;
+      flipperRight.angle = flipperRight.active ? Math.PI / 6 : 0;
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBall();
+      drawFlipper(flipperLeft);
+      drawFlipper(flipperRight);
+      updateBall();
+      updateFlippers();
+      requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'a') flipperLeft.active = true;
+      if (e.key === 'l') flipperRight.active = true;
+    });
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'a') flipperLeft.active = false;
+      if (e.key === 'l') flipperRight.active = false;
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
